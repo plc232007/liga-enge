@@ -1,3 +1,5 @@
+import { TursoHttpError } from './turso-fetch.js';
+
 export type StartupStage = 'origem' | 'configuracao-banco' | 'conexao-banco' | 'aplicacao';
 
 export class StartupError extends Error {
@@ -11,10 +13,10 @@ export class StartupError extends Error {
 // can contain credentials. Only retain types, known codes and source locations.
 export function startupDiagnostic(error: unknown) {
   const etapa = error instanceof StartupError ? error.stage : 'requisicao';
-  const causas: { tipo: string; codigo?: string; statusHttp?: number; locais: string[] }[] = [];
+  const causas: { tipo: string; codigo?: string; statusHttp?: number; motivo?: string; formatoToken?: string; locais: string[] }[] = [];
   let current = error instanceof StartupError ? error.cause : error;
   for (let depth = 0; current instanceof Error && depth < 4; depth++) {
-    const tipo = ['TypeError', 'RangeError', 'SyntaxError', 'LibsqlError', 'HttpServerError', 'DomainError', 'Error'].includes(current.name)
+    const tipo = ['TypeError', 'RangeError', 'SyntaxError', 'LibsqlError', 'HttpServerError', 'TursoHttpError', 'DomainError', 'Error'].includes(current.name)
       ? current.name : 'Error';
     const rawCode = 'code' in current ? current.code : undefined;
     const codigo = typeof rawCode === 'string' && [
@@ -33,7 +35,8 @@ export function startupDiagnostic(error: unknown) {
         const match = line.match(/(?:\/var\/task\/|file:\/\/\/var\/task\/|node:)([^\s()?]+:\d+:\d+)\)?$/);
         return match ? [match[1]] : [];
       }).slice(0, 8);
-    causas.push({ tipo, ...(codigo ? { codigo } : {}), ...(statusHttp ? { statusHttp } : {}), locais });
+    causas.push({ tipo, ...(codigo ? { codigo } : {}), ...(statusHttp ? { statusHttp } : {}),
+      ...(current instanceof TursoHttpError ? { motivo: current.reason, formatoToken: current.tokenFormat } : {}), locais });
     current = current.cause;
   }
   return { etapa, causas };

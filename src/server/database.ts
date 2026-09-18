@@ -3,12 +3,13 @@ import { mkdirSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { Database } from './libsql.js';
+import { tursoFetch } from './turso-fetch.js';
 export async function openDatabase(filename: string, authToken?: string) {
     const remote = /^(libsql|https):\/\//.test(filename);
     if (!remote && filename !== ':memory:')
         mkdirSync(dirname(resolve(filename)), { recursive: true });
     const url = remote || filename === ':memory:' ? filename : pathToFileURL(resolve(filename)).href;
-    const db = new Database(createClient({ url, authToken, intMode: 'number' }));
+    const db = new Database(createClient({ url, authToken, intMode: 'number', ...(remote ? { fetch: tursoFetch(authToken) } : {}) }));
     try {
         await db.exec('PRAGMA foreign_keys = ON; PRAGMA busy_timeout = 5000;');
         await db.transaction(async () => {

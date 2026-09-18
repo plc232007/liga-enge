@@ -89,6 +89,10 @@ códigos conhecidos, status HTTP de falhas remotas e localizações no código. 
 senhas e URLs do banco não são registrados. A resposta pública continua genérica.
 Um registro que mostre apenas `TypeError` pertence à versão anterior desse
 diagnóstico; publique a alteração de código antes de consultar novamente.
+Falhas HTTP do Turso também incluem `motivo` (uma classificação da resposta)
+e `formatoToken` (por exemplo, `endereco-no-lugar-do-token` ou `formato-jwt`).
+Esses campos não contêm a resposta bruta nem a credencial. `formato-jwt` indica
+apenas o formato do texto; não garante assinatura válida, permissão ou validade.
 
 ## Transações e desenvolvimento local
 
