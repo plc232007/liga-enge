@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "engines": {
-    "node": ">=22.12.0"
+    "node": "22.x"
   },
   "scripts": {
     "setup": "tsx scripts/setup.ts",
@@ -13,9 +13,11 @@
     "start": "tsx src/server/index.ts",
     "test": "tsx --test tests/*.test.ts",
     "check": "npm run test && npm run build",
-    "test:browser": "tsx scripts/smoke-v2.ts"
+    "test:browser": "tsx scripts/smoke-v2.ts",
+    "db:export": "tsx scripts/export-database.ts"
   },
   "dependencies": {
+    "@libsql/client": "^0.18.0",
     "better-sqlite3": "^12.0.0",
     "express": "^5.2.1",
     "react": "^19.0.0",

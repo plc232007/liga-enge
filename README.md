@@ -27,6 +27,7 @@ O administrador que reportou um resultado também precisa de outra pessoa para h
 
 - [Especificação consolidada](<ESPEC_Liga_Engesoftware_v2 (1).md>)
 - [Implementação, decisões e validação da v2](docs/07-especificacao-v2.md)
+- [Publicação na Vercel com banco Turso](docs/08-vercel.md)
 - [Diagnóstico da aplicação original](docs/01-diagnostico.md)
 
 Os documentos `02` a `06` descrevem a fundação v1; para comportamento funcional atual prevalecem a especificação v2 e o documento `07`.
@@ -43,4 +44,6 @@ npm start     # interface compilada e API em 3001
 
 Ao usar `npm start` localmente, configure `APP_ORIGIN=http://127.0.0.1:3001`. Para `npm run dev`, use `APP_ORIGIN=http://127.0.0.1:5173`.
 
-Publicação exige `NODE_ENV=production`, `APP_ORIGIN=https://SEU-DOMINIO`, proxy HTTPS e disco persistente. O processo escuta em loopback por padrão. Esta versão não foi publicada na internet.
+Para publicar na **Vercel**, siga [o guia de configuração do Turso e deploy](docs/08-vercel.md). A interface e a API ficam na Vercel; os dados persistem no Turso/libSQL. Configure `TURSO_DATABASE_URL`, `TURSO_AUTH_TOKEN`, `ADMIN_USERNAME`, `ADMIN_PASSWORD_HASH` e `APP_ORIGIN` nas variáveis de produção. O projeto já inclui `vercel.json` e a função `api/index.ts`.
+
+Localmente, sem variáveis do Turso, o banco SQLite continua em `data/liga.db`. Em servidor próprio com SQLite, a publicação exige `NODE_ENV=production`, `APP_ORIGIN=https://SEU-DOMINIO`, proxy HTTPS e disco persistente. O processo local escuta em loopback por padrão.
