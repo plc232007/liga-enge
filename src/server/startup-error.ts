@@ -11,10 +11,10 @@ export class StartupError extends Error {
 // can contain credentials. Only retain types, known codes and source locations.
 export function startupDiagnostic(error: unknown) {
   const etapa = error instanceof StartupError ? error.stage : 'requisicao';
-  const causas: { tipo: string; codigo?: string; locais: string[] }[] = [];
+  const causas: { tipo: string; codigo?: string; statusHttp?: number; locais: string[] }[] = [];
   let current = error instanceof StartupError ? error.cause : error;
   for (let depth = 0; current instanceof Error && depth < 4; depth++) {
-    const tipo = ['TypeError', 'RangeError', 'SyntaxError', 'LibsqlError', 'DomainError', 'Error'].includes(current.name)
+    const tipo = ['TypeError', 'RangeError', 'SyntaxError', 'LibsqlError', 'HttpServerError', 'DomainError', 'Error'].includes(current.name)
       ? current.name : 'Error';
     const rawCode = 'code' in current ? current.code : undefined;
     const codigo = typeof rawCode === 'string' && [
@@ -23,6 +23,9 @@ export function startupDiagnostic(error: unknown) {
       'UNAUTHORIZED', 'FORBIDDEN', 'SERVER_ERROR', 'SQLITE_ERROR',
       'URL_INVALID', 'URL_SCHEME_NOT_SUPPORTED', 'AUTH_TOKEN_INVALID',
     ].includes(rawCode) ? rawCode : undefined;
+    const rawStatus = 'status' in current ? current.status : undefined;
+    const statusHttp = typeof rawStatus === 'number' && Number.isInteger(rawStatus) && rawStatus >= 400 && rawStatus <= 599
+      ? rawStatus : undefined;
     const locais = (current.stack ?? '').split('\n').filter(line => /^\s+at /.test(line))
       .flatMap(line => {
         // Only code shipped with the application or Node internals, never a
@@ -30,7 +33,7 @@ export function startupDiagnostic(error: unknown) {
         const match = line.match(/(?:\/var\/task\/|file:\/\/\/var\/task\/|node:)([^\s()?]+:\d+:\d+)\)?$/);
         return match ? [match[1]] : [];
       }).slice(0, 8);
-    causas.push({ tipo, ...(codigo ? { codigo } : {}), locais });
+    causas.push({ tipo, ...(codigo ? { codigo } : {}), ...(statusHttp ? { statusHttp } : {}), locais });
     current = current.cause;
   }
   return { etapa, causas };

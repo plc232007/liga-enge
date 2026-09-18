@@ -2,6 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { createRuntime } from '../src/server/runtime.js';
 import { StartupError, startupDiagnostic } from '../src/server/startup-error.js';
+import { createClient } from '@libsql/client/http';
 
 test('diagnóstico diferencia origem inválida de configuração ausente do banco', async () => {
   await assert.rejects(createRuntime({ VERCEL: '1', APP_ORIGIN: 'liga-enge.vercel.app' }), error => {
@@ -14,6 +15,31 @@ test('diagnóstico diferencia origem inválida de configuração ausente do banc
     assert.equal(startupDiagnostic(error).etapa, 'configuracao-banco');
     return true;
   });
+});
+
+test('diagnóstico distingue respostas HTTP do Turso usando o cliente remoto', async () => {
+  for (const status of [401, 403, 404, 429, 500, 503]) {
+    const client = createClient({
+      url: 'https://banco.example', authToken: 'token-privado',
+      fetch: async () => new Response(JSON.stringify({ error: 'resposta-privada' }), {
+        status, headers: { 'Content-Type': 'application/json' },
+      }),
+    });
+    try {
+      await assert.rejects(client.executeMultiple('PRAGMA foreign_keys = ON; PRAGMA busy_timeout = 5000;'), error => {
+        const diagnostic = startupDiagnostic(new StartupError('conexao-banco', error));
+        assert.equal(diagnostic.causas[0].codigo, 'SERVER_ERROR');
+        assert.equal(diagnostic.causas[1].tipo, 'HttpServerError');
+        assert.equal(diagnostic.causas[1].statusHttp, status);
+        assert.doesNotMatch(JSON.stringify(diagnostic), /token-privado|resposta-privada|banco\.example/);
+        return true;
+      });
+    } finally { client.close(); }
+  }
+  for (const status of ['segredo', 401.5, 200, 999, NaN]) {
+    const error = Object.assign(new Error('privado'), { status });
+    assert.equal(startupDiagnostic(error).causas[0].statusHttp, undefined);
+  }
 });
 
 test('diagnóstico preserva localização e causa sem registrar valores privados', () => {

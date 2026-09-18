@@ -85,7 +85,7 @@ Esses testes não substituem a verificação do deploy com credenciais reais.
 No painel da Vercel, abra **Logs**, acesse `/api/health` e procure
 `Falha ao iniciar API`. O registro informa a etapa (`origem`,
 `configuracao-banco`, `conexao-banco` ou `aplicacao`), o tipo do erro,
-códigos conhecidos e localizações no código. Mensagens brutas, tokens,
+códigos conhecidos, status HTTP de falhas remotas e localizações no código. Mensagens brutas, tokens,
 senhas e URLs do banco não são registrados. A resposta pública continua genérica.
 Um registro que mostre apenas `TypeError` pertence à versão anterior desse
 diagnóstico; publique a alteração de código antes de consultar novamente.
