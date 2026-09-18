@@ -9,11 +9,11 @@ export class StartupError extends Error {
   }
 }
 
-// Do not log messages, URLs, inputs or arbitrary error objects: database errors
-// can contain credentials. Only retain types, known codes and source locations.
+// Do not log raw messages, URLs, inputs or arbitrary error objects. Only the
+// Turso transport's redacted message may accompany types, codes and locations.
 export function startupDiagnostic(error: unknown) {
   const etapa = error instanceof StartupError ? error.stage : 'requisicao';
-  const causas: { tipo: string; codigo?: string; statusHttp?: number; motivo?: string; formatoToken?: string; locais: string[] }[] = [];
+  const causas: { tipo: string; codigo?: string; statusHttp?: number; motivo?: string; formatoToken?: string; mensagemServidor?: string; locais: string[] }[] = [];
   let current = error instanceof StartupError ? error.cause : error;
   for (let depth = 0; current instanceof Error && depth < 4; depth++) {
     const tipo = ['TypeError', 'RangeError', 'SyntaxError', 'LibsqlError', 'HttpServerError', 'TursoHttpError', 'DomainError', 'Error'].includes(current.name)
@@ -36,7 +36,7 @@ export function startupDiagnostic(error: unknown) {
         return match ? [match[1]] : [];
       }).slice(0, 8);
     causas.push({ tipo, ...(codigo ? { codigo } : {}), ...(statusHttp ? { statusHttp } : {}),
-      ...(current instanceof TursoHttpError ? { motivo: current.reason, formatoToken: current.tokenFormat } : {}), locais });
+      ...(current instanceof TursoHttpError ? { motivo: current.reason, formatoToken: current.tokenFormat, mensagemServidor: current.serverMessage } : {}), locais });
     current = current.cause;
   }
   return { etapa, causas };

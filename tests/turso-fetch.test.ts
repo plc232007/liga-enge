@@ -24,11 +24,25 @@ test('cliente remoto distingue recusa do JWT sem expor resposta ou credenciais',
         assert.equal(diagnostic.causas[0].statusHttp, 400);
         assert.equal(diagnostic.causas[0].motivo, reason);
         assert.equal(diagnostic.causas[0].formatoToken, 'formato-jwt');
-        assert.doesNotMatch(JSON.stringify(diagnostic), /Privad|banco\.example|JWT error|unknown variant/);
+        assert.equal(diagnostic.causas[0].mensagemServidor, message);
+        assert.doesNotMatch(JSON.stringify(diagnostic), /Privad|banco\.example/);
         return true;
       });
     } finally { client.close(); }
   }
+});
+
+test('mensagem do servidor oculta token, endereço e literais sem perder o motivo', async () => {
+  const token = 'cabecalhoPrivado.conteudoPrivado.assinaturaPrivada';
+  const message = `Unsupported pragma busy_timeout; ${token}; https://banco.example/token=${token}; value 'senha-privada'`;
+  await assert.rejects(tursoFetch(token, async () => new Response(JSON.stringify({ error: message, private: 'nao-registrar' }), {
+    status: 400,
+  }))('https://banco.example'), error => {
+    const diagnostic = startupDiagnostic(error);
+    assert.match(diagnostic.causas[0].mensagemServidor!, /Unsupported pragma busy_timeout/);
+    assert.doesNotMatch(JSON.stringify(diagnostic), /Privad|banco\.example|senha-privada|nao-registrar/);
+    return true;
+  });
 });
 
 test('diagnóstico identifica erros de cópia do token sem registrar seu valor', async () => {

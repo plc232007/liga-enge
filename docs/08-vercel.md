@@ -93,6 +93,9 @@ Falhas HTTP do Turso também incluem `motivo` (uma classificação da resposta)
 e `formatoToken` (por exemplo, `endereco-no-lugar-do-token` ou `formato-jwt`).
 Esses campos não contêm a resposta bruta nem a credencial. `formato-jwt` indica
 apenas o formato do texto; não garante assinatura válida, permissão ou validade.
+O campo `mensagemServidor` preserva até 600 caracteres da mensagem de erro do
+serviço, com o token, endereços e literais entre aspas ocultos. Ele aparece apenas
+nos logs privados da Vercel, nunca na resposta pública da API.
 
 ## Transações e desenvolvimento local
 
