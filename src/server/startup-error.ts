@@ -1,0 +1,37 @@
+export type StartupStage = 'origem' | 'configuracao-banco' | 'conexao-banco' | 'aplicacao';
+
+export class StartupError extends Error {
+  constructor(public readonly stage: StartupStage, cause: unknown) {
+    super(`Falha na inicialização: ${stage}`, { cause });
+    this.name = 'StartupError';
+  }
+}
+
+// Do not log messages, URLs, inputs or arbitrary error objects: database errors
+// can contain credentials. Only retain types, known codes and source locations.
+export function startupDiagnostic(error: unknown) {
+  const etapa = error instanceof StartupError ? error.stage : 'requisicao';
+  const causas: { tipo: string; codigo?: string; locais: string[] }[] = [];
+  let current = error instanceof StartupError ? error.cause : error;
+  for (let depth = 0; current instanceof Error && depth < 4; depth++) {
+    const tipo = ['TypeError', 'RangeError', 'SyntaxError', 'LibsqlError', 'DomainError', 'Error'].includes(current.name)
+      ? current.name : 'Error';
+    const rawCode = 'code' in current ? current.code : undefined;
+    const codigo = typeof rawCode === 'string' && [
+      'ERR_INVALID_URL', 'ERR_INVALID_ARG_TYPE', 'ERR_INVALID_ARG_VALUE',
+      'ECONNREFUSED', 'ECONNRESET', 'ENOTFOUND', 'ETIMEDOUT',
+      'UNAUTHORIZED', 'FORBIDDEN', 'SERVER_ERROR', 'SQLITE_ERROR',
+      'URL_INVALID', 'URL_SCHEME_NOT_SUPPORTED', 'AUTH_TOKEN_INVALID',
+    ].includes(rawCode) ? rawCode : undefined;
+    const locais = (current.stack ?? '').split('\n').filter(line => /^\s+at /.test(line))
+      .flatMap(line => {
+        // Only code shipped with the application or Node internals, never a
+        // remote URL or the first line of the stack (the error message).
+        const match = line.match(/(?:\/var\/task\/|file:\/\/\/var\/task\/|node:)([^\s()?]+:\d+:\d+)\)?$/);
+        return match ? [match[1]] : [];
+      }).slice(0, 8);
+    causas.push({ tipo, ...(codigo ? { codigo } : {}), locais });
+    current = current.cause;
+  }
+  return { etapa, causas };
+}

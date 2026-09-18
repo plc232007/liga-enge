@@ -1,5 +1,6 @@
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import { createRuntime } from '../src/server/runtime.js';
+import { startupDiagnostic } from '../src/server/startup-error.js';
 
 let runtime: ReturnType<typeof createRuntime> | undefined;
 
@@ -19,7 +20,7 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
       try { app(req, res); } catch (error) { reject(error); }
     });
   } catch (error) {
-    console.error('Falha ao iniciar API', error instanceof Error ? error.name : 'Erro');
+    console.error('Falha ao iniciar API', JSON.stringify(startupDiagnostic(error)));
     res.writeHead(503, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });
     res.end(JSON.stringify({ erro: 'API indisponível. Verifique a configuração do banco e do administrador.' }));
   }

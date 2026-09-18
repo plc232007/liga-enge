@@ -80,6 +80,16 @@ Faça o deploy após salvar as variáveis. Ao alterá-las, faça um novo deploy.
 incluindo integridade, rollback, concorrência e persistência entre inicializações.
 Esses testes não substituem a verificação do deploy com credenciais reais.
 
+### Se a API retornar 503
+
+No painel da Vercel, abra **Logs**, acesse `/api/health` e procure
+`Falha ao iniciar API`. O registro informa a etapa (`origem`,
+`configuracao-banco`, `conexao-banco` ou `aplicacao`), o tipo do erro,
+códigos conhecidos e localizações no código. Mensagens brutas, tokens,
+senhas e URLs do banco não são registrados. A resposta pública continua genérica.
+Um registro que mostre apenas `TypeError` pertence à versão anterior desse
+diagnóstico; publique a alteração de código antes de consultar novamente.
+
 ## Transações e desenvolvimento local
 
 Sem `TURSO_DATABASE_URL`, o desenvolvimento local continua usando `data/liga.db`
